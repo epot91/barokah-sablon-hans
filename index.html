@@ -1,731 +1,278 @@
-<!DOCTYPE html>
-<html lang="id" class="dark">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Garage Hans Sablon - Management Piduiteun</title>
+// Global Orders Array to store incoming orders
+let orderList = [
+  {
+    id: 'GH-202611-01',
+    customer: 'Budi Santoso',
+    phone: '08123456789',
+    deadline: '2026-11-15',
+    status: 'Sedang Diproses',
+    itemsDesc: 'Dewasa (Lengan Pendek) x 12 Pcs',
+    total: 660000,
+    dp: 300000,
+    sisa: 360000,
+    image: ''
+  }
+];
+
+let dataKas = [
+  { tgl: '06/11/2026', tipe: 'Pemasukan', desc: 'DP Order Budi Santoso', nominal: 300000 },
+  { tgl: '06/11/2026', tipe: 'Pengeluaran', desc: 'Beli Bahan DTF & Tinta', nominal: 120000 }
+];
+
+let chartInstance = null;
+let currentUploadedImage = '';
+
+document.addEventListener('DOMContentLoaded', () => {
+  lucide.createIcons();
+  initKasTable();
+  initChart();
+  calcSablonTotal();
+  calcPrintTotal();
+  renderOrderGrid();
+  updateDashboardSummary();
+});
+
+// Password Visibility Toggle
+function togglePassword(inputId) {
+  const input = document.getElementById(inputId);
+  if (input.type === 'password') {
+    input.type = 'text';
+  } else {
+    input.type = 'password';
+  }
+}
+
+// Login handler
+function handleLogin(e) {
+  e.preventDefault();
+  const pass = document.getElementById('login-password').value;
+  const err = document.getElementById('login-error');
+
+  if (pass === 'Indonesia123') {
+    err.classList.add('hidden');
+    document.getElementById('login-screen').classList.add('hidden');
+    document.getElementById('dashboard-screen').classList.remove('hidden');
+    switchTab('order-sablon');
+  } else {
+    err.classList.remove('hidden');
+  }
+}
+
+function logout() {
+  document.getElementById('dashboard-screen').classList.add('hidden');
+  document.getElementById('login-screen').classList.remove('hidden');
+}
+
+// Dark / Light Theme Toggle
+function toggleTheme() {
+  const html = document.documentElement;
+  const label = document.getElementById('theme-label');
+
+  if (html.classList.contains('dark')) {
+    html.classList.remove('dark');
+    label.innerText = 'Theme';
+  } else {
+    html.classList.add('dark');
+    label.innerText = 'Theme';
+  }
+}
+
+// Sidebar Hide / Show Toggle
+function toggleSidebar() {
+  const sidebar = document.getElementById('main-sidebar');
+  sidebar.classList.toggle('sidebar-hidden');
+}
+
+// Navigation Tabs Switcher
+function switchTab(tabId) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+  document.querySelectorAll('.nav-btn').forEach(el => {
+    el.classList.remove('bg-red-600', 'text-white');
+    el.classList.add('text-gray-300');
+  });
+
+  document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+  const activeNav = document.getElementById(`nav-${tabId}`);
+  if (activeNav) {
+    activeNav.classList.add('bg-red-600', 'text-white');
+    activeNav.classList.remove('text-gray-300');
+  }
+
+  if(tabId === 'order-masuk') {
+    renderOrderGrid();
+  }
+  if(tabId === 'grafik' && chartInstance) {
+    chartInstance.resize();
+  }
+}
+
+// Reset Form Sablon kembali bersih
+function resetSablonForm() {
+  document.getElementById('sablon-customer').value = '';
+  document.getElementById('sablon-phone').value = '';
+  document.getElementById('sablon-deadline').value = '';
+  document.getElementById('dewasa-pendek-qty').value = '0';
+  document.getElementById('dewasa-panjang-qty').value = '0';
+  document.getElementById('anak-pendek-qty').value = '0';
+  document.getElementById('anak-panjang-qty').value = '0';
+  document.getElementById('sablon-jahit').value = '0';
+  document.getElementById('sablon-dp').value = '0';
+  document.getElementById('sablon-note').value = '';
+  document.getElementById('sablon-file').value = '';
   
-  
-  <!--Fav Icon-->
-    <link rel="shortcut icon" href="hans-icon.png" type="image/x-icon">
-  <link href="https://fonts.googleapis.com/css2?family=Lexend+Deca:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            brand: {
-              red: '#D91024',
-              50: '#fef2f2',
-              100: '#fee2e2',
-              500: '#ef4444',
-              600: '#dc2626',
-              700: '#b91c1c',
-            }
-          },
-          fontFamily: {
-            sans: ['Lexend Deca', 'sans-serif'],
-          }
-        }
-      }
-    }
-  </script>
-  <!-- Lucide Icons & Chart.js -->
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- Custom CSS -->
-  <link rel="stylesheet" href="style.css">
-</head>
-<body class="bg-gray-900 text-gray-100 font-sans transition-colors duration-300 min-h-screen">
+  const preview = document.getElementById('sablon-img-preview');
+  preview.src = '';
+  preview.classList.add('hidden');
+  document.getElementById('sablon-img-placeholder').classList.remove('hidden');
+  currentUploadedImage = '';
 
-<!-- ==================== PAGE 1: LOGIN SECTION ==================== -->
-<div id="login-screen" class="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-cover bg-center" style="background-image: url('background-hans.jpg');">
-  <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
+  calcSablonTotal();
+}
 
-  <div class="w-full max-w-md bg-gray-900/90 backdrop-blur-md p-8 rounded-3xl border border-gray-700/80 shadow-2xl relative z-10 text-center">
-    
-    <div class="w-24 h-24 mx-auto mb-4 rounded-full overflow-hidden border-2 border-red-600 shadow-xl shadow-red-600/30 bg-red-600 flex items-center justify-center p-1">
-      
-      <img src="images/logo.png" alt="Hans Logo" class="w-full h-full object-cover rounded-full">
-    </div>
-    
-    <h2 class="text-2xl font-black text-white tracking-wide uppercase">Hans</h2>
-    <p class="text-gray-400 text-xs tracking-wider mb-6">SCREEN PRINTING SOLUTION</p>
+// Calculation Sablon
+function calcSablonTotal() {
+  const dPendekQty = parseInt(document.getElementById('dewasa-pendek-qty').value) || 0;
+  const dPendekHarga = parseInt(document.getElementById('dewasa-pendek-harga').value) || 0;
+  const dPendekTotal = dPendekQty * dPendekHarga;
 
-    <h3 class="text-lg font-bold text-gray-200 mb-4">kapendak deui</h3>
+  const dPanjangQty = parseInt(document.getElementById('dewasa-panjang-qty').value) || 0;
+  const dPanjangHarga = parseInt(document.getElementById('dewasa-panjang-harga').value) || 0;
+  const dPanjangTotal = dPanjangQty * dPanjangHarga;
 
-    <form onsubmit="handleLogin(event)" class="space-y-4 text-left">
-      <div>
-        <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5">siapa yaa</label>
-        <div class="relative">
-          <i data-lucide="user" class="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
-          <input type="text" id="login-username" required placeholder="dummy user" 
-            class="w-full pl-12 pr-4 py-3 bg-gray-800/90 border border-gray-700 rounded-2xl text-white placeholder-gray-500 focus:outline-none focus:border-red-500 transition-colors text-sm">
-        </div>
-      </div>
+  const aPendekQty = parseInt(document.getElementById('anak-pendek-qty').value) || 0;
+  const aPendekHarga = parseInt(document.getElementById('anak-pendek-harga').value) || 0;
+  const aPendekTotal = aPendekQty * aPendekHarga;
 
-      <div>
-        <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5">Asupkeun Password na</label>
-        <div class="relative">
-          <i data-lucide="lock" class="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
-          <input type="password" id="login-password" required placeholder="••••••••" 
-            class="w-full pl-12 pr-12 py-3 bg-gray-800/90 border border-gray-700 rounded-2xl text-white placeholder-gray-500 focus:outline-none focus:border-red-500 transition-colors text-sm">
-          <button type="button" onclick="togglePassword('login-password')" class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white">
-            <i data-lucide="eye" id="eye-icon" class="w-5 h-5"></i>
+  const aPanjangQty = parseInt(document.getElementById('anak-panjang-qty').value) || 0;
+  const aPanjangHarga = parseInt(document.getElementById('anak-panjang-harga').value) || 0;
+  const aPanjangTotal = aPanjangQty * aPanjangHarga;
+
+  const jahitPerPcs = parseInt(document.getElementById('sablon-jahit').value) || 0;
+  const totalQty = dPendekQty + dPanjangQty + aPendekQty + aPanjangQty;
+  const jahitTotal = totalQty * jahitPerPcs;
+
+  const dp = parseInt(document.getElementById('sablon-dp').value) || 0;
+  const kaosSubtotal = dPendekTotal + dPanjangTotal + aPendekTotal + aPanjangTotal;
+  const grandTotal = kaosSubtotal + jahitTotal;
+  const sisa = grandTotal - dp;
+
+  document.getElementById('summary-kaos-subtotal').innerText = `Rp ${kaosSubtotal.toLocaleString('id-ID')}`;
+  document.getElementById('summary-jahit-total').innerText = `Rp ${jahitTotal.toLocaleString('id-ID')}`;
+  document.getElementById('summary-dp-val').innerText = `Rp ${dp.toLocaleString('id-ID')}`;
+  document.getElementById('summary-sisa-val').innerText = `Rp ${(sisa > 0 ? sisa : 0).toLocaleString('id-ID')}`;
+  document.getElementById('sablon-total-val').innerText = `Rp ${grandTotal.toLocaleString('id-ID')}`;
+}
+
+// Update Totals on Main Dashboard Widgets (Omset, DP, Sisa, Saldo Kas Harian, Total Orders)
+function updateDashboardSummary() {
+  let totalOmset = 0;
+  let totalDP = 0;
+  let totalSisa = 0;
+
+  orderList.forEach(ord => {
+    totalOmset += ord.total;
+    totalDP += ord.dp;
+    totalSisa += (ord.sisa > 0 ? ord.sisa : 0);
+  });
+
+  // Calculate Kas Saldo
+  let saldoKas = 0;
+  dataKas.forEach(item => {
+    if(item.tipe === 'Pemasukan') saldoKas += item.nominal;
+    else saldoKas -= item.nominal;
+  });
+
+  document.getElementById('dash-total-omset').innerText = `Rp ${totalOmset.toLocaleString('id-ID')}`;
+  document.getElementById('dash-total-dp').innerText = `Rp ${totalDP.toLocaleString('id-ID')}`;
+  document.getElementById('dash-total-sisa').innerText = `Rp ${totalSisa.toLocaleString('id-ID')}`;
+  document.getElementById('dash-saldo-kas').innerText = `Rp ${saldoKas.toLocaleString('id-ID')}`;
+  document.getElementById('dash-total-orders').innerText = `${orderList.length} Order`;
+}
+
+// ==================== KAS HARIAN (HANDLERS UNTUK TAMBAH, EDIT, & HAPUS) ====================
+function tambahKas() {
+  const editIndex = parseInt(document.getElementById('kas-edit-index').value);
+  const tipe = document.getElementById('kas-tipe').value;
+  const desc = document.getElementById('kas-desc').value || 'Tanpa Keterangan';
+  const nominal = parseInt(document.getElementById('kas-nominal').value) || 0;
+  const tgl = new Date().toLocaleDateString('id-ID');
+
+  if (nominal <= 0) return alert('Nominal harus lebih dari 0');
+
+  if (editIndex >= 0) {
+    dataKas[editIndex].tipe = tipe;
+    dataKas[editIndex].desc = desc;
+    dataKas[editIndex].nominal = nominal;
+  } else {
+    dataKas.unshift({ tgl, tipe, desc, nominal });
+  }
+
+  resetKasForm();
+  initKasTable();
+  updateDashboardSummary();
+}
+
+function editKas(index) {
+  const item = dataKas[index];
+  document.getElementById('kas-edit-index').value = index;
+  document.getElementById('kas-tipe').value = item.tipe;
+  document.getElementById('kas-desc').value = item.desc;
+  document.getElementById('kas-nominal').value = item.nominal;
+
+  document.getElementById('kas-form-title').innerText = 'Edit Transaksi Kas';
+  document.getElementById('btn-save-kas').querySelector('span').innerText = 'Update Transaksi';
+  document.getElementById('btn-cancel-kas').classList.remove('hidden');
+}
+
+function deleteKas(index) {
+  if (confirm('Apakah Anda yakin ingin menghapus transaksi kas ini?')) {
+    dataKas.splice(index, 1);
+    initKasTable();
+    updateDashboardSummary();
+  }
+}
+
+function resetKasForm() {
+  document.getElementById('kas-edit-index').value = '-1';
+  document.getElementById('kas-desc').value = '';
+  document.getElementById('kas-nominal').value = '';
+  document.getElementById('kas-form-title').innerText = 'Tambah Kas Harian';
+  document.getElementById('btn-save-kas').querySelector('span').innerText = 'Simpan Transaksi';
+  document.getElementById('btn-cancel-kas').classList.add('hidden');
+}
+
+function initKasTable() {
+  const tbody = document.getElementById('kas-table-body');
+  tbody.innerHTML = '';
+
+  let saldo = 0;
+  dataKas.forEach((item, index) => {
+    if(item.tipe === 'Pemasukan') saldo += item.nominal;
+    else saldo -= item.nominal;
+
+    const isMasuk = item.tipe === 'Pemasukan';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="px-4 py-3 text-gray-400 font-mono text-xs">${item.tgl}</td>
+      <td class="px-4 py-3 font-semibold ${isMasuk ? 'text-emerald-400' : 'text-red-400'}">${item.tipe}</td>
+      <td class="px-4 py-3 text-gray-200">${item.desc}</td>
+      <td class="px-4 py-3 text-right font-semibold ${isMasuk ? 'text-emerald-400' : 'text-red-400'}">
+        ${isMasuk ? '+' : '-'} Rp ${item.nominal.toLocaleString('id-ID')}
+      </td>
+      <td class="px-4 py-3 text-center">
+        <div class="flex items-center justify-center gap-1.5">
+          <button onclick="editKas(${index})" class="p-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white" title="Edit Kas">
+            <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+          </button>
+          <button onclick="deleteKas(${index})" class="p-1 rounded bg-red-500/10 hover:bg-red-500/20 text-red-400" title="Hapus Kas">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
           </button>
         </div>
-      </div>
-
-      <div class="flex items-center justify-between text-xs pt-1">
-        <label class="flex items-center gap-2 cursor-pointer text-gray-400 hover:text-gray-200">
-          <input type="checkbox" class="rounded border-gray-700 bg-gray-800 text-red-600 focus:ring-red-500">
-          <span>saling ingetan kade poho</span>
-        </label>
-        <a href="#" onclick="alert('Default Password: Indonesia123')" class="text-red-400 hover:underline">Forgot Password?</a>
-      </div>
-
-      <div id="login-error" class="hidden text-red-400 text-xs text-center bg-red-500/10 py-2 rounded-xl border border-red-500/20">
-        Password salah! (Default PW: yuksablon123)
-      </div>
-
-      <button type="submit" class="w-full py-3.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-2xl shadow-lg shadow-red-600/30 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer mt-4">
-        <span>Sign In</span>
-        <i data-lucide="arrow-right" class="w-5 h-5"></i>
-      </button>
-    </form>
-  </div>
-</div>
-
-<!-- ==================== PAGE 2: MAIN DASHBOARD ==================== -->
-<div id="dashboard-screen" class="hidden min-h-screen flex flex-col md:flex-row">
-
-  <!-- Sidebar -->
-  <aside id="main-sidebar" class="w-full md:w-64 bg-gray-900 border-r border-gray-800 flex flex-col justify-between shrink-0 transition-all duration-300">
-    <div>
-      <div class="p-5 border-b border-gray-800 flex items-center gap-3">
-        <img src="images/logo.png" alt="Hans Logo" class="w-10 h-10 rounded-full border border-red-600 object-cover bg-red-600">
-        <div>
-          <h1 class="font-bold text-sm leading-tight text-white uppercase tracking-wider">Garage</h1>
-          <p class="text-[10px] text-gray-400">Screen Printing Solution</p>
-        </div>
-      </div>
-
-      <nav class="p-4 space-y-1">
-        <button onclick="switchTab('order-sablon')" id="nav-order-sablon" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm text-gray-300 hover:bg-gray-800 transition-colors">
-          <i data-lucide="shirt" class="w-5 h-5"></i> Orders (Sablon t-shirt)
-        </button>
-        <button onclick="switchTab('order-masuk')" id="nav-order-masuk" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm text-gray-300 hover:bg-gray-800 transition-colors">
-          <i data-lucide="layout-grid" class="w-5 h-5"></i> Order Masuk <span id="badge-order-masuk" class="ml-auto bg-red-600 text-white text-[10px] px-2 py-0.5 rounded-full">0</span>
-        </button>
-        <button onclick="switchTab('print-digital')" id="nav-print-digital" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm text-gray-300 hover:bg-gray-800 transition-colors">
-          <i data-lucide="printer" class="w-5 h-5"></i> Print Digital
-        </button>
-        <button onclick="switchTab('keuangan')" id="nav-keuangan" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm text-gray-300 hover:bg-gray-800 transition-colors">
-          <i data-lucide="wallet" class="w-5 h-5"></i> Pemasukan Harian
-        </button>
-        <button onclick="switchTab('grafik')" id="nav-grafik" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm text-gray-300 hover:bg-gray-800 transition-colors">
-          <i data-lucide="bar-chart-3" class="w-5 h-5"></i> Kudu Naik di Bulan Kamari
-        </button>
-      </nav>
-    </div>
-
-    <div class="p-4 border-t border-gray-800">
-      <button onclick="logout()" class="w-full flex items-center gap-3 px-4 py-2.5 text-red-400 hover:bg-red-500/10 rounded-xl text-sm font-medium transition-colors">
-        <i data-lucide="log-out" class="w-4 h-4"></i> Enggeusan ahh..!!
-      </button>
-    </div>
-  </aside>
-
-  <!-- Main Content Body -->
-  <div class="flex-1 flex flex-col min-w-0 bg-gray-950">
-    <!-- Top Header Bar -->
-    <header class="h-16 bg-gray-900 border-b border-gray-800 px-6 flex items-center justify-between sticky top-0 z-20">
-      <div class="flex items-center gap-4">
-        <button onclick="toggleSidebar()" class="p-2.5 rounded-xl border border-gray-800 text-gray-300 hover:bg-gray-800 transition-colors flex items-center gap-2 text-sm">
-          <i data-lucide="menu" class="w-5 h-5"></i>
-        </button>
-        <div class="flex items-center gap-2">
-          <img src="images/logo.png" alt="logo" class="w-7 h-7 rounded-full border border-red-600 object-cover bg-red-600">
-          <span class="font-bold text-sm text-white">HANS Screen Printing Solution</span>
-        </div>
-      </div>
-
-      <!-- Theme Switcher -->
-      <button onclick="toggleTheme()" class="flex items-center gap-2 px-3.5 py-2 rounded-xl border border-gray-800 text-xs font-medium text-gray-300 hover:bg-gray-800 transition-colors">
-        <i data-lucide="sun" class="w-4 h-4 text-amber-500 hidden dark:inline"></i>
-        <i data-lucide="moon" class="w-4 h-4 text-indigo-400 inline dark:hidden"></i>
-        <span id="theme-label">Theme</span>
-      </button>
-    </header>
-
-    <!-- Main Content Area -->
-    <main class="flex-1 p-6 md:p-8 overflow-y-auto space-y-6">
-
-      <!-- SUMMARY CARDS / PENTOTALAN UANG DI DASHBOARD UTAMA -->
-      <div id="dashboard-summary-cards" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="bg-gray-900 p-5 rounded-2xl border border-gray-800 shadow-sm flex items-center justify-between">
-          <div>
-            <p class="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Total Omset Order</p>
-            <h3 id="dash-total-omset" class="text-xl font-black text-white">Rp 0</h3>
-            <p class="text-[10px] text-gray-500 mt-1">Akumulasi seluruh pesanan</p>
-          </div>
-          <div class="w-12 h-12 bg-red-600/10 text-red-500 rounded-2xl flex items-center justify-center shrink-0">
-            <i data-lucide="dollar-sign" class="w-6 h-6"></i>
-          </div>
-        </div>
-
-        <div class="bg-gray-900 p-5 rounded-2xl border border-gray-800 shadow-sm flex items-center justify-between">
-          <div>
-            <p class="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Total DP Masuk</p>
-            <h3 id="dash-total-dp" class="text-xl font-black text-emerald-400">Rp 0</h3>
-            <p class="text-[10px] text-gray-500 mt-1">Uang muka telah diterima</p>
-          </div>
-          <div class="w-12 h-12 bg-emerald-500/10 text-emerald-400 rounded-2xl flex items-center justify-center shrink-0">
-            <i data-lucide="arrow-down-left" class="w-6 h-6"></i>
-          </div>
-        </div>
-
-        <div class="bg-gray-900 p-5 rounded-2xl border border-gray-800 shadow-sm flex items-center justify-between">
-          <div>
-            <p class="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Sisa Piutang/Pelunasan</p>
-            <h3 id="dash-total-sisa" class="text-xl font-black text-amber-400">Rp 0</h3>
-            <p class="text-[10px] text-gray-500 mt-1">Belum dilunasi customer</p>
-          </div>
-          <div class="w-12 h-12 bg-amber-500/10 text-amber-400 rounded-2xl flex items-center justify-center shrink-0">
-            <i data-lucide="clock" class="w-6 h-6"></i>
-          </div>
-        </div>
-
-        <div class="bg-gray-900 p-5 rounded-2xl border border-gray-800 shadow-sm flex items-center justify-between">
-          <div>
-            <p class="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Total Pesanan</p>
-            <h3 id="dash-total-orders" class="text-xl font-black text-indigo-400">0 Order</h3>
-            <p class="text-[10px] text-gray-500 mt-1">Order Sablon &amp; Cetak</p>
-          </div>
-          <div class="w-12 h-12 bg-indigo-500/10 text-indigo-400 rounded-2xl flex items-center justify-center shrink-0">
-            <i data-lucide="shopping-bag" class="w-6 h-6"></i>
-          </div>
-        </div>
-      </div>
-
-      <!-- TAB 1: ORDER SABLON -->
-      <section id="tab-order-sablon" class="tab-content hidden space-y-6">
-        <div>
-          <h2 class="text-2xl font-bold text-white">Orders (Sablon T-shirt)</h2>
-          <p class="text-xs text-gray-400">Formulir Pesanan Sablon Kaos Dewasa &amp; Anak</p>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <!-- Form Left -->
-          <div class="lg:col-span-2 bg-gray-900 p-6 rounded-2xl border border-gray-800 shadow-sm space-y-5">
-            <div class="flex items-center justify-between border-b border-gray-800 pb-3">
-              <h3 class="text-base font-bold text-white">Formulir Pesanan (Sablon)</h3>
-              <button onclick="resetSablonForm()" class="text-xs text-gray-400 hover:text-red-400 flex items-center gap-1">
-                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Reset Form
-              </button>
-            </div>
-
-            <!-- Customer Info & Deadline -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label class="block text-[11px] font-bold uppercase text-gray-400 mb-1">Customer Info</label>
-                <input type="text" id="sablon-customer" placeholder="Nama Pelanggan" class="w-full px-4 py-2.5 bg-gray-800/80 border border-gray-700 rounded-xl text-sm focus:outline-none focus:border-red-500">
-              </div>
-              <div>
-                <label class="block text-[11px] font-bold uppercase text-gray-400 mb-1">No. WhatsApp/Telp</label>
-                <input type="text" id="sablon-phone" placeholder="08xxxxxxxxx" class="w-full px-4 py-2.5 bg-gray-800/80 border border-gray-700 rounded-xl text-sm focus:outline-none focus:border-red-500">
-              </div>
-              <div>
-                <label class="block text-[11px] font-bold uppercase text-gray-400 mb-1">Deadline</label>
-                <input type="date" id="sablon-deadline" class="w-full px-4 py-2.5 bg-gray-800/80 border border-gray-700 rounded-xl text-sm focus:outline-none focus:border-red-500 text-white">
-              </div>
-            </div>
-
-            <!-- SEKSI DEWASA -->
-            <div class="p-4 bg-gray-950/60 rounded-xl border border-gray-800 space-y-4">
-              <span class="text-xs font-bold text-red-500 uppercase tracking-wider block flex items-center gap-2">
-                <i data-lucide="user" class="w-4 h-4"></i> Kategori Dewasa
-              </span>
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
-                <span class="text-xs font-semibold text-gray-300">Dewasa (Lengan Pendek)</span>
-                <div>
-                  <label class="block text-[10px] text-gray-400 uppercase mb-0.5">Jumlah (Pcs)</label>
-                  <input type="number" id="dewasa-pendek-qty" value="0" min="0" oninput="calcSablonTotal()" class="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-xl text-xs focus:outline-none focus:border-red-500">
-                </div>
-                <div>
-                  <label class="block text-[10px] text-gray-400 uppercase mb-0.5">Harga Satuan (Rp)</label>
-                  <input type="number" id="dewasa-pendek-harga" value="55000" min="0" oninput="calcSablonTotal()" class="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-xl text-xs focus:outline-none focus:border-red-500">
-                </div>
-              </div>
-
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center border-t border-gray-800/80 pt-3">
-                <span class="text-xs font-semibold text-gray-300">Dewasa (Lengan Panjang)</span>
-                <div>
-                  <label class="block text-[10px] text-gray-400 uppercase mb-0.5">Jumlah (Pcs)</label>
-                  <input type="number" id="dewasa-panjang-qty" value="0" min="0" oninput="calcSablonTotal()" class="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-xl text-xs focus:outline-none focus:border-red-500">
-                </div>
-                <div>
-                  <label class="block text-[10px] text-gray-400 uppercase mb-0.5">Harga Satuan (Rp)</label>
-                  <input type="number" id="dewasa-panjang-harga" value="65000" min="0" oninput="calcSablonTotal()" class="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-xl text-xs focus:outline-none focus:border-red-500">
-                </div>
-              </div>
-            </div>
-
-            <!-- SEKSI ANAK-ANAK -->
-            <div class="p-4 bg-gray-950/60 rounded-xl border border-gray-800 space-y-4">
-              <span class="text-xs font-bold text-emerald-500 uppercase tracking-wider block flex items-center gap-2">
-                <i data-lucide="baby" class="w-4 h-4"></i> Kategori Anak-Anak
-              </span>
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
-                <span class="text-xs font-semibold text-gray-300">Anak (Lengan Pendek)</span>
-                <div>
-                  <label class="block text-[10px] text-gray-400 uppercase mb-0.5">Jumlah (Pcs)</label>
-                  <input type="number" id="anak-pendek-qty" value="0" min="0" oninput="calcSablonTotal()" class="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-xl text-xs focus:outline-none focus:border-red-500">
-                </div>
-                <div>
-                  <label class="block text-[10px] text-gray-400 uppercase mb-0.5">Harga Satuan (Rp)</label>
-                  <input type="number" id="anak-pendek-harga" value="40000" min="0" oninput="calcSablonTotal()" class="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-xl text-xs focus:outline-none focus:border-red-500">
-                </div>
-              </div>
-
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center border-t border-gray-800/80 pt-3">
-                <span class="text-xs font-semibold text-gray-300">Anak (Lengan Panjang)</span>
-                <div>
-                  <label class="block text-[10px] text-gray-400 uppercase mb-0.5">Jumlah (Pcs)</label>
-                  <input type="number" id="anak-panjang-qty" value="0" min="0" oninput="calcSablonTotal()" class="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-xl text-xs focus:outline-none focus:border-red-500">
-                </div>
-                <div>
-                  <label class="block text-[10px] text-gray-400 uppercase mb-0.5">Harga Satuan (Rp)</label>
-                  <input type="number" id="anak-panjang-harga" value="45000" min="0" oninput="calcSablonTotal()" class="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-xl text-xs focus:outline-none focus:border-red-500">
-                </div>
-              </div>
-            </div>
-
-            <!-- JAHITAN & DP & STATUS -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label class="block text-[11px] font-bold uppercase text-gray-400 mb-1">Ongkos Jahitan (Pcs) (Rp)</label>
-                <input type="number" id="sablon-jahit" value="0" min="0" oninput="calcSablonTotal()" placeholder="Rp Per Pcs" class="w-full px-4 py-2.5 bg-gray-800/80 border border-gray-700 rounded-xl text-sm focus:outline-none focus:border-red-500">
-              </div>
-              <div>
-                <label class="block text-[11px] font-bold uppercase text-gray-400 mb-1">Uang Muka (DP) (Rp)</label>
-                <input type="number" id="sablon-dp" value="0" min="0" oninput="calcSablonTotal()" placeholder="Rp Uang Muka" class="w-full px-4 py-2.5 bg-gray-800/80 border border-gray-700 rounded-xl text-sm focus:outline-none focus:border-red-500">
-              </div>
-              <div>
-                <label class="block text-[11px] font-bold uppercase text-gray-400 mb-1">Status Pengerjaan</label>
-                <select id="sablon-status" class="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-sm focus:outline-none focus:border-red-500">
-                  <option value="Sedang Diproses">Sedang Diproses</option>
-                  <option value="Selesai">Selesai</option>
-                </select>
-              </div>
-            </div>
-
-            <!-- Upload & Catatan -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label class="block text-[11px] font-bold uppercase text-gray-400 mb-1">Upload Desain</label>
-                <input type="file" id="sablon-file" accept="image/*" onchange="previewImage(event, 'sablon-img-preview')" class="w-full text-xs text-gray-400 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-gray-800 file:text-gray-200 hover:file:bg-gray-700">
-              </div>
-              <div>
-                <label class="block text-[11px] font-bold uppercase text-gray-400 mb-1">Catatan</label>
-                <textarea id="sablon-note" rows="2" placeholder="Catatan sablon..." class="w-full px-4 py-2 bg-gray-800/80 border border-gray-700 rounded-xl text-xs focus:outline-none focus:border-red-500"></textarea>
-              </div>
-            </div>
-          </div>
-
-          <!-- Sidebar Summary Right -->
-          <div class="bg-gray-900 p-6 rounded-2xl border border-gray-800 shadow-sm flex flex-col justify-between">
-            <div class="space-y-4">
-              <h3 class="text-base font-bold text-white border-b border-gray-800 pb-3">Sidebar Summary</h3>
-              
-              <div class="w-full h-36 bg-gray-950 rounded-xl flex items-center justify-center overflow-hidden border border-dashed border-gray-800">
-                <img id="sablon-img-preview" src="" alt="Preview Desain" class="hidden w-full h-full object-contain">
-                <div id="sablon-img-placeholder" class="text-center text-gray-500 text-xs">
-                  <i data-lucide="image" class="w-8 h-8 mx-auto mb-1 opacity-40"></i>
-                  Preview Upload Desain
-                </div>
-              </div>
-
-              <!-- Rincian -->
-              <div class="space-y-2 text-xs border-b border-gray-800 pb-3">
-                <div class="flex justify-between text-gray-400">
-                  <span>Kaos Subtotal:</span>
-                  <span id="summary-kaos-subtotal" class="font-semibold text-gray-200">Rp 0</span>
-                </div>
-                <div class="flex justify-between text-gray-400">
-                  <span>Ongkos Jahitan Total:</span>
-                  <span id="summary-jahit-total" class="font-semibold text-gray-200">Rp 0</span>
-                </div>
-                <div class="flex justify-between text-gray-400">
-                  <span>Uang Muka (DP):</span>
-                  <span id="summary-dp-val" class="font-semibold text-emerald-400">Rp 0</span>
-                </div>
-                <div class="flex justify-between text-gray-400 font-bold">
-                  <span>Sisa Pembayaran:</span>
-                  <span id="summary-sisa-val" class="font-bold text-red-400">Rp 0</span>
-                </div>
-              </div>
-
-              <div class="flex justify-between text-sm font-bold text-white pt-1">
-                <span>Total:</span>
-                <span id="sablon-total-val" class="text-red-500">Rp 0</span>
-              </div>
-            </div>
-
-            <button onclick="prosesOrderSablon()" class="w-full mt-6 py-3.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer">
-              <i data-lucide="save" class="w-5 h-5"></i>
-              <span>Simpan &amp; Cetak Nota</span>
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <!-- TAB 1.5: ORDER MASUK (GRID VIEW WITH EDIT CAPABILITY) -->
-      <section id="tab-order-masuk" class="tab-content hidden space-y-6">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h2 class="text-2xl font-bold text-white">Order Masuk</h2>
-            <p class="text-xs text-gray-400">Kelola, edit rincian, dan pantau status pengerjaan pesanan</p>
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="text-xs bg-gray-800 text-gray-300 px-3 py-1.5 rounded-xl border border-gray-700">Total: <strong id="total-order-count">0</strong> Order</span>
-          </div>
-        </div>
-
-        <!-- Grid Cards -->
-        <div id="order-grid-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <!-- Dynamic Order Cards will appear here -->
-        </div>
-      </section>
-
-      <!-- TAB 2: PRINT DIGITAL -->
-      <section id="tab-print-digital" class="tab-content hidden space-y-6">
-        <div>
-          <h2 class="text-2xl font-bold text-white">Print Digital</h2>
-          <p class="text-xs text-gray-400">DTF, Banner, Stiker A3 &amp; Meteran</p>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div class="lg:col-span-2 bg-gray-900 p-6 rounded-2xl border border-gray-800 shadow-sm space-y-4">
-            <h3 class="text-base font-bold text-white border-b border-gray-800 pb-3">Input Pesanan Digital Print</h3>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label class="block text-[11px] font-bold uppercase text-gray-400 mb-1">Customer Info</label>
-                <input type="text" id="print-customer" placeholder="Nama Pelanggan" class="w-full px-4 py-2.5 bg-gray-800/80 border border-gray-700 rounded-xl text-sm focus:outline-none focus:border-red-500">
-              </div>
-              <div>
-                <label class="block text-[11px] font-bold uppercase text-gray-400 mb-1">Jenis Layanan</label>
-                <select id="print-jenis" class="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-sm focus:outline-none focus:border-red-500">
-                  <option value="DTF Film">DTF Film</option>
-                  <option value="Banner Spanduk">Banner Spanduk</option>
-                  <option value="Stiker Vinyl/Cromo">Stiker</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label class="block text-[11px] font-bold uppercase text-gray-400 mb-1">Ukuran / Satuan</label>
-                <select id="print-ukuran" class="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-sm focus:outline-none focus:border-red-500">
-                  <option value="A3">A3</option>
-                  <option value="Per Meter">Per Meter</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-[11px] font-bold uppercase text-gray-400 mb-1">Jumlah (Qty / Meter)</label>
-                <input type="number" id="print-qty" value="1" min="1" oninput="calcPrintTotal()" class="w-full px-4 py-2.5 bg-gray-800/80 border border-gray-700 rounded-xl text-sm focus:outline-none focus:border-red-500">
-              </div>
-              <div>
-                <label class="block text-[11px] font-bold uppercase text-gray-400 mb-1">Harga Satuan (Rp)</label>
-                <input type="number" id="print-harga" value="45000" min="0" oninput="calcPrintTotal()" class="w-full px-4 py-2.5 bg-gray-800/80 border border-gray-700 rounded-xl text-sm focus:outline-none focus:border-red-500">
-              </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label class="block text-[11px] font-bold uppercase text-gray-400 mb-1">Uang Muka (DP) (Rp)</label>
-                <input type="number" id="print-dp" value="0" min="0" oninput="calcPrintTotal()" class="w-full px-4 py-2.5 bg-gray-800/80 border border-gray-700 rounded-xl text-sm focus:outline-none focus:border-red-500">
-              </div>
-              <div>
-                <label class="block text-[11px] font-bold uppercase text-gray-400 mb-1">Upload File Print</label>
-                <input type="file" id="print-file" accept="image/*" onchange="previewImage(event, 'print-img-preview')" class="w-full text-xs text-gray-400 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-gray-800 file:text-gray-200">
-              </div>
-            </div>
-          </div>
-
-          <div class="bg-gray-900 p-6 rounded-2xl border border-gray-800 shadow-sm flex flex-col justify-between">
-            <div class="space-y-4">
-              <h3 class="text-base font-bold text-white border-b border-gray-800 pb-3">Sidebar Summary</h3>
-
-              <div class="w-full h-36 bg-gray-950 rounded-xl flex items-center justify-center overflow-hidden border border-dashed border-gray-800">
-                <img id="print-img-preview" src="" alt="Preview Cetak" class="hidden w-full h-full object-contain">
-                <div id="print-img-placeholder" class="text-center text-gray-500 text-xs">
-                  <i data-lucide="file-image" class="w-8 h-8 mx-auto mb-1 opacity-40"></i>
-                  Preview File Cetak
-                </div>
-              </div>
-
-              <div class="space-y-2 text-xs border-b border-gray-800 pb-3">
-                <div class="flex justify-between text-gray-400">
-                  <span>Total Unit:</span>
-                  <span id="print-summary-qty" class="font-semibold text-gray-200">1</span>
-                </div>
-                <div class="flex justify-between text-gray-400">
-                  <span>Uang Muka (DP):</span>
-                  <span id="print-summary-dp" class="font-semibold text-emerald-400">Rp 0</span>
-                </div>
-                <div class="flex justify-between text-gray-400 font-bold">
-                  <span>Sisa Pembayaran:</span>
-                  <span id="print-summary-sisa" class="font-bold text-red-400">Rp 0</span>
-                </div>
-              </div>
-
-              <div class="flex justify-between text-sm font-bold text-white pt-1">
-                <span>Total Biaya:</span>
-                <span id="print-total-val" class="text-red-500">Rp 45.000</span>
-              </div>
-            </div>
-
-            <button onclick="prosesPrintDigital()" class="w-full mt-6 py-3.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer">
-              <i data-lucide="printer" class="w-5 h-5"></i>
-              <span>Cetak Nota</span>
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <!-- TAB 3: KAS HARIAN -->
-      <section id="tab-keuangan" class="tab-content hidden space-y-6">
-        <div>
-          <h2 class="text-2xl font-bold text-white">Kas Harian</h2>
-          <p class="text-xs text-gray-400">Pemasukan &amp; Pengeluaran Workshop</p>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div class="bg-gray-900 p-6 rounded-2xl border border-gray-800 shadow-sm space-y-4">
-            <h3 class="text-base font-bold text-white border-b border-gray-800 pb-3">Tambah Kas Harian</h3>
-
-            <div>
-              <label class="block text-[11px] font-bold uppercase text-gray-400 mb-1">Jenis Transaksi</label>
-              <select id="kas-tipe" class="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-sm focus:outline-none focus:border-red-500">
-                <option value="Pemasukan">Pemasukan (+)</option>
-                <option value="Pengeluaran">Pengeluaran (-)</option>
-              </select>
-            </div>
-
-            <div>
-              <label class="block text-[11px] font-bold uppercase text-gray-400 mb-1">Keterangan / Deskripsi</label>
-              <input type="text" id="kas-desc" placeholder="Contoh: Beli Tinta, Pembayaran DP..." class="w-full px-4 py-2.5 bg-gray-800/80 border border-gray-700 rounded-xl text-sm focus:outline-none focus:border-red-500">
-            </div>
-
-            <div>
-              <label class="block text-[11px] font-bold uppercase text-gray-400 mb-1">Nominal (Rp)</label>
-              <input type="number" id="kas-nominal" placeholder="0" class="w-full px-4 py-2.5 bg-gray-800/80 border border-gray-700 rounded-xl text-sm focus:outline-none focus:border-red-500">
-            </div>
-
-            <button onclick="tambahKas()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer">
-              <i data-lucide="plus-circle" class="w-5 h-5"></i>
-              <span>Simpan Transaksi</span>
-            </button>
-          </div>
-
-          <div class="lg:col-span-2 bg-gray-900 p-6 rounded-2xl border border-gray-800 shadow-sm space-y-4">
-            <div class="flex items-center justify-between border-b border-gray-800 pb-3">
-              <h3 class="text-base font-bold text-white">Kas Harian Transaksi</h3>
-              <div class="text-xs text-gray-400">Total Kas: <span id="kas-saldo" class="font-bold text-emerald-400">Rp 0</span></div>
-            </div>
-
-            <div class="overflow-x-auto">
-              <table class="w-full text-left text-sm">
-                <thead class="text-xs uppercase bg-gray-950 text-gray-400">
-                  <tr>
-                    <th class="px-4 py-3 rounded-l-lg">Tanggal</th>
-                    <th class="px-4 py-3">Tipe</th>
-                    <th class="px-4 py-3">Deskripsi</th>
-                    <th class="px-4 py-3 rounded-r-lg text-right">Nominal</th>
-                  </tr>
-                </thead>
-                <tbody id="kas-table-body" class="divide-y divide-gray-800">
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- TAB 4: GRAFIK PENCAPAIAN -->
-      <section id="tab-grafik" class="tab-content hidden space-y-6">
-        <div>
-          <h2 class="text-2xl font-bold text-white">Grafik Pencapaian</h2>
-          <p class="text-xs text-gray-400">Visualisasi Omset &amp; Tren Bulanan</p>
-        </div>
-
-        <div class="bg-gray-900 p-6 rounded-2xl border border-gray-800 shadow-sm">
-          <div class="h-80 w-full">
-            <canvas id="chartBulanan"></canvas>
-          </div>
-        </div>
-      </section>
-
-    </main>
-  </div>
-</div>
-
-<!-- MODAL EDIT ORDER -->
-<div id="edit-order-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[110] hidden flex items-center justify-center p-4">
-  <div class="bg-gray-900 border border-gray-800 text-white w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-4">
-    <div class="flex items-center justify-between border-b border-gray-800 pb-3">
-      <h3 class="font-bold text-sm text-white">Edit Rincian Order</h3>
-      <button onclick="closeEditModal()" class="text-gray-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
-    </div>
-
-    <input type="hidden" id="edit-order-index">
-
-    <div>
-      <label class="block text-[11px] text-gray-400 uppercase font-semibold mb-1">Nama Customer</label>
-      <input type="text" id="edit-customer" class="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-xl text-xs text-white">
-    </div>
-
-    <div>
-      <label class="block text-[11px] text-gray-400 uppercase font-semibold mb-1">No WhatsApp/Telp</label>
-      <input type="text" id="edit-phone" class="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-xl text-xs text-white">
-    </div>
-
-    <div class="grid grid-cols-2 gap-3">
-      <div>
-        <label class="block text-[11px] text-gray-400 uppercase font-semibold mb-1">Deadline</label>
-        <input type="date" id="edit-deadline" class="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-xl text-xs text-white">
-      </div>
-      <div>
-        <label class="block text-[11px] text-gray-400 uppercase font-semibold mb-1">Status</label>
-        <select id="edit-status" class="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-xl text-xs text-white">
-          <option value="Sedang Diproses">Sedang Diproses</option>
-          <option value="Selesai">Selesai</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="grid grid-cols-2 gap-3">
-      <div>
-        <label class="block text-[11px] text-gray-400 uppercase font-semibold mb-1">Total Biaya (Rp)</label>
-        <input type="number" id="edit-total" class="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-xl text-xs text-white">
-      </div>
-      <div>
-        <label class="block text-[11px] text-gray-400 uppercase font-semibold mb-1">DP Diterima (Rp)</label>
-        <input type="number" id="edit-dp" class="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-xl text-xs text-white">
-      </div>
-    </div>
-
-    <div>
-      <label class="block text-[11px] text-gray-400 uppercase font-semibold mb-1">Rincian Item / Catatan</label>
-      <input type="text" id="edit-items-desc" class="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-xl text-xs text-white">
-    </div>
-
-    <div class="flex justify-end gap-2 pt-2 border-t border-gray-800">
-      <button onclick="closeEditModal()" class="px-4 py-2 bg-gray-800 text-gray-300 rounded-xl text-xs font-semibold hover:bg-gray-700">Batal</button>
-      <button onclick="saveEditOrder()" class="px-4 py-2 bg-red-600 text-white rounded-xl text-xs font-semibold hover:bg-red-700">Simpan Perubahan</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL NOTA (FORMAT LEBIH KECIL DARI A5 / KOMPAK 100mm) -->
-<div id="nota-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4">
-  <div id="printable-nota-modal" class="bg-white text-gray-900 w-full max-w-[105mm] rounded-xl p-5 shadow-2xl relative border border-gray-300 mx-auto flex flex-col justify-between">
-    <div>
-      <div class="no-print flex items-center justify-between border-b pb-2 mb-3">
-        <span class="font-bold text-gray-700 text-xs">Preview Nota Kecil</span>
-        <div class="flex items-center gap-1.5">
-          <button onclick="window.print()" class="px-2.5 py-1 bg-red-600 text-white rounded-md text-[11px] font-bold hover:bg-red-700 flex items-center gap-1">
-            <i data-lucide="printer" class="w-3.5 h-3.5"></i> Cetak Nota
-          </button>
-          <button onclick="closeNotaModal()" class="px-2.5 py-1 bg-gray-200 text-gray-700 rounded-md text-[11px] font-bold hover:bg-gray-300">
-            Tutup
-          </button>
-        </div>
-      </div>
-
-      <div class="space-y-3 text-[11px]">
-        <!-- Header Nota dengan Gambar/Logo -->
-        <div class="text-center border-b pb-2.5 flex flex-col items-center">
-          <img src="images/logo.png" alt="Hans Logo" class="w-10 h-10 rounded-full mb-1 border border-red-600 object-cover bg-red-600">
-          <h1 class="text-base font-black text-gray-900 tracking-wider uppercase">HANS</h1>
-          <p class="text-[9px] text-gray-500 font-semibold tracking-wider">SCREEN PRINTING SOLUTION</p>
-          <p class="text-[8px] text-gray-400">WA: 0812-3456-7890</p>
-        </div>
-
-        <div class="grid grid-cols-2 text-[10px] gap-1.5 bg-gray-50 p-2 rounded-lg border border-gray-200">
-          <div>
-            <span class="text-gray-400 block text-[9px]">Customer:</span>
-            <span id="nota-customer" contenteditable="true" class="font-bold border-b border-dashed border-gray-400 focus:outline-none">Dummy name</span>
-          </div>
-          <div class="text-right">
-            <span class="text-gray-400 block text-[9px]">Tanggal:</span>
-            <span id="nota-date" contenteditable="true" class="font-semibold border-b border-dashed border-gray-400 focus:outline-none">06/11/2026</span>
-          </div>
-          <div>
-            <span class="text-gray-400 block text-[9px]">No. Nota:</span>
-            <span id="nota-id" contenteditable="true" class="font-mono font-bold border-b border-dashed border-gray-400 focus:outline-none">GH-202611-01</span>
-          </div>
-          <div class="text-right">
-            <span class="text-gray-400 block text-[9px]">Deadline:</span>
-            <span id="nota-deadline" contenteditable="true" class="font-bold text-red-600 border-b border-dashed border-gray-400 focus:outline-none">-</span>
-          </div>
-        </div>
-
-        <!-- Tabel Item -->
-        <table class="w-full text-[10px] mt-2">
-          <thead class="border-b border-gray-300 bg-gray-100">
-            <tr>
-              <th class="py-1 px-1 text-left">Deskripsi</th>
-              <th class="py-1 px-1 text-center">Qty</th>
-              <th class="py-1 px-1 text-right">Harga</th>
-              <th class="py-1 px-1 text-right">Total</th>
-            </tr>
-          </thead>
-          <tbody id="nota-items-body" class="divide-y divide-gray-100">
-          </tbody>
-        </table>
-
-        <!-- Gambar Pesanan di Nota -->
-        <div id="nota-image-container" class="my-2 text-center hidden">
-          <p class="text-[9px] text-gray-400 mb-0.5 uppercase font-semibold">Desain / Mockup:</p>
-          <img id="nota-preview-img" src="" alt="Desain Sablon" class="w-24 h-24 object-contain mx-auto border border-gray-200 rounded-lg p-1 bg-gray-50">
-        </div>
-
-        <div class="border-t pt-2 space-y-1 text-[10px]">
-          <div class="flex justify-between text-gray-600">
-            <span>Subtotal Kaos:</span>
-            <span id="nota-subtotal" contenteditable="true" class="focus:outline-none">Rp 0</span>
-          </div>
-          <div class="flex justify-between text-gray-600">
-            <span>Ongkos Jahit:</span>
-            <span id="nota-jahit" contenteditable="true" class="focus:outline-none">Rp 0</span>
-          </div>
-          <div class="flex justify-between text-emerald-600 font-semibold">
-            <span>Uang Muka (DP):</span>
-            <span id="nota-dp" contenteditable="true" class="focus:outline-none">Rp 0</span>
-          </div>
-          <div class="flex justify-between text-red-600 font-bold border-t pt-0.5">
-            <span>Sisa Pembayaran:</span>
-            <span id="nota-sisa" contenteditable="true" class="focus:outline-none">Rp 0</span>
-          </div>
-          <div class="flex justify-between font-black text-xs text-gray-900 border-t pt-1">
-            <span>TOTAL:</span>
-            <span id="nota-grand-total" contenteditable="true" class="focus:outline-none">Rp 0</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="text-center pt-3 text-[9px] text-gray-400 border-t mt-3">
-      <p>Terima kasih atas kepercayaan Anda di <br><strong class="text-gray-700">HANS Screen Printing Solution</strong>!</p>
-    </div>
-  </div>
-</div>
-
-<script src="script.js"></script>
-</body>
-</html>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('kas-saldo').innerText = `Rp ${saldo.toLocaleString('id-ID')}`;
+  lucide.createIcons();
+}
