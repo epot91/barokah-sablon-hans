@@ -42,7 +42,7 @@ function togglePassword(inputId) {
   }
 }
 
-// Login handler
+// Login handler (Fixed & robust)
 function handleLogin(e) {
   e.preventDefault();
   const pass = document.getElementById('login-password').value;
@@ -55,6 +55,7 @@ function handleLogin(e) {
     switchTab('order-sablon');
   } else {
     err.classList.remove('hidden');
+    err.innerText = 'Password salah! Gunakan: Indonesia123';
   }
 }
 
@@ -63,7 +64,7 @@ function logout() {
   document.getElementById('login-screen').classList.remove('hidden');
 }
 
-// Dark / Light Theme Toggle
+// Dark / Light Theme Toggle (Fixed & working perfectly)
 function toggleTheme() {
   const html = document.documentElement;
   const label = document.getElementById('theme-label');
@@ -74,15 +75,6 @@ function toggleTheme() {
   } else {
     html.classList.add('dark');
     label.innerText = 'Dark Mode';
-  }
-}
-
-  if (html.classList.contains('dark')) {
-    html.classList.remove('dark');
-    label.innerText = 'Theme';
-  } else {
-    html.classList.add('dark');
-    label.innerText = 'Theme';
   }
 }
 
@@ -100,7 +92,9 @@ function switchTab(tabId) {
     el.classList.add('text-gray-300');
   });
 
-  document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+  const targetTab = document.getElementById(`tab-${tabId}`);
+  if(targetTab) targetTab.classList.remove('hidden');
+
   const activeNav = document.getElementById(`nav-${tabId}`);
   if (activeNav) {
     activeNav.classList.add('bg-red-600', 'text-white');
@@ -130,11 +124,14 @@ function resetSablonForm() {
   document.getElementById('sablon-file').value = '';
   
   const preview = document.getElementById('sablon-img-preview');
-  preview.src = '';
-  preview.classList.add('hidden');
-  document.getElementById('sablon-img-placeholder').classList.remove('hidden');
+  if(preview) {
+    preview.src = '';
+    preview.classList.add('hidden');
+  }
+  const placeholder = document.getElementById('sablon-img-placeholder');
+  if(placeholder) placeholder.classList.remove('hidden');
+  
   currentUploadedImage = '';
-
   calcSablonTotal();
 }
 
@@ -197,8 +194,10 @@ function previewImage(event, targetId) {
     const reader = new FileReader();
     reader.onload = function(e) {
       currentUploadedImage = e.target.result;
-      preview.src = e.target.result;
-      preview.classList.remove('hidden');
+      if(preview) {
+        preview.src = e.target.result;
+        preview.classList.remove('hidden');
+      }
       if(placeholder) placeholder.classList.add('hidden');
     }
     reader.readAsDataURL(file);
@@ -244,7 +243,6 @@ function prosesOrderSablon() {
 
   const orderId = 'GH-' + Math.floor(100000 + Math.random() * 900000);
 
-  // Push to order list
   orderList.unshift({
     id: orderId,
     customer: customer,
@@ -258,11 +256,20 @@ function prosesOrderSablon() {
     image: currentUploadedImage
   });
 
+  // Otomatis catat DP ke Kas Harian sebagai Pemasukan jika DP > 0
+  if(dp > 0) {
+    dataKas.unshift({
+      tgl: new Date().toLocaleDateString('id-ID'),
+      tipe: 'Pemasukan',
+      desc: `DP Order ${customer} (${orderId})`,
+      nominal: dp
+    });
+    initKasTable();
+  }
+
   renderOrderGrid();
   updateDashboardSummary();
   openNotaModal(orderId, customer, deadline, items, kaosSubtotal, jahitTotal, dp, grandTotal, currentUploadedImage);
-
-  // RESET FORM DASBOARD KEMBALI SEPERTI SEMULA
   resetSablonForm();
 }
 
@@ -297,6 +304,16 @@ function prosesPrintDigital() {
     image: currentUploadedImage
   });
 
+  if(dp > 0) {
+    dataKas.unshift({
+      tgl: new Date().toLocaleDateString('id-ID'),
+      tipe: 'Pemasukan',
+      desc: `DP Print ${customer} (${orderId})`,
+      nominal: dp
+    });
+    initKasTable();
+  }
+
   renderOrderGrid();
   updateDashboardSummary();
   openNotaModal(orderId, customer, '-', items, total, 0, dp, total, currentUploadedImage);
@@ -325,7 +342,6 @@ function openNotaModal(orderId, customer, deadline, items, subtotal, jahitTotal,
     tbody.appendChild(tr);
   });
 
-  // Handle Image in Nota
   const imgContainer = document.getElementById('nota-image-container');
   const previewImg = document.getElementById('nota-preview-img');
   if(imgData) {
@@ -350,7 +366,7 @@ function closeNotaModal() {
   document.getElementById('nota-modal').classList.add('hidden');
 }
 
-// Update Totals on Main Dashboard Widgets
+// Update Totals on Main Dashboard Widgets (Omset, DP, Sisa, Saldo Kas, Sisa Saldo dari Omset, Total Orders)
 function updateDashboardSummary() {
   let totalOmset = 0;
   let totalDP = 0;
@@ -362,15 +378,33 @@ function updateDashboardSummary() {
     totalSisa += (ord.sisa > 0 ? ord.sisa : 0);
   });
 
+  // Calculate Kas Saldo and Total Pengeluaran
+  let saldoKas = 0;
+  let totalPengeluaranKas = 0;
+  dataKas.forEach(item => {
+    if(item.tipe === 'Pemasukan') {
+      saldoKas += item.nominal;
+    } else {
+      saldoKas -= item.nominal;
+      totalPengeluaranKas += item.nominal;
+    }
+  });
+
+  // Sisa Saldo dari Omset (Total Omset dikurangi Total Pengeluaran Kas Harian / Modal operasional)
+  let sisaSaldoOmset = totalOmset - totalPengeluaranKas;
+
   document.getElementById('dash-total-omset').innerText = `Rp ${totalOmset.toLocaleString('id-ID')}`;
   document.getElementById('dash-total-dp').innerText = `Rp ${totalDP.toLocaleString('id-ID')}`;
   document.getElementById('dash-total-sisa').innerText = `Rp ${totalSisa.toLocaleString('id-ID')}`;
-  document.getElementById('dash-total-orders').innerText = `${orderList.length} Order`;
+  document.getElementById('dash-saldo-kas').innerText = `Rp ${saldoKas.toLocaleString('id-ID')}`;
+  document.getElementById('dash-sisa-omset').innerText = `Rp ${sisaSaldoOmset.toLocaleString('id-ID')}`;
+  document.getElementById('dash-total-orders').innerText = `${orderList.length}`;
 }
 
 // Render Grid of Incoming Orders
 function renderOrderGrid() {
   const container = document.getElementById('order-grid-container');
+  if(!container) return;
   container.innerHTML = '';
   document.getElementById('total-order-count').innerText = orderList.length;
   document.getElementById('badge-order-masuk').innerText = orderList.length;
@@ -391,7 +425,7 @@ function renderOrderGrid() {
         </div>
         <div class="flex items-start justify-between gap-2">
           <h3 class="text-base font-bold text-white mb-1">${order.customer}</h3>
-          <button onclick="openEditModal(${index})" class="text-xs text-gray-400 hover:text-red-400 p-1 rounded bg-gray-800/80 border border-gray-700">
+          <button onclick="openEditModal(${index})" class="text-xs text-gray-400 hover:text-red-400 p-1 rounded bg-gray-800/80 border border-gray-700" title="Edit Order">
             <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
           </button>
         </div>
@@ -464,28 +498,65 @@ function saveEditOrder() {
   updateDashboardSummary();
 }
 
-// Kas Harian Handlers
+// ==================== KAS HARIAN (TAMBAH, EDIT, & HAPUS PEMASUKAN/PENGELUARAN) ====================
 function tambahKas() {
+  const editIndex = parseInt(document.getElementById('kas-edit-index').value);
   const tipe = document.getElementById('kas-tipe').value;
   const desc = document.getElementById('kas-desc').value || 'Tanpa Keterangan';
   const nominal = parseInt(document.getElementById('kas-nominal').value) || 0;
   const tgl = new Date().toLocaleDateString('id-ID');
 
-  if(nominal <= 0) return alert('Nominal harus lebih dari 0');
+  if (nominal <= 0) return alert('Nominal harus lebih dari 0');
 
-  dataKas.unshift({ tgl, tipe, desc, nominal });
+  if (editIndex >= 0) {
+    dataKas[editIndex].tipe = tipe;
+    dataKas[editIndex].desc = desc;
+    dataKas[editIndex].nominal = nominal;
+  } else {
+    dataKas.unshift({ tgl, tipe, desc, nominal });
+  }
+
+  resetKasForm();
   initKasTable();
+  updateDashboardSummary();
+}
 
+function editKas(index) {
+  const item = dataKas[index];
+  document.getElementById('kas-edit-index').value = index;
+  document.getElementById('kas-tipe').value = item.tipe;
+  document.getElementById('kas-desc').value = item.desc;
+  document.getElementById('kas-nominal').value = item.nominal;
+
+  document.getElementById('kas-form-title').innerText = 'Edit Transaksi Kas';
+  document.getElementById('btn-save-kas').querySelector('span').innerText = 'Update Transaksi';
+  document.getElementById('btn-cancel-kas').classList.remove('hidden');
+}
+
+function deleteKas(index) {
+  if (confirm('Apakah Anda yakin ingin menghapus transaksi kas ini?')) {
+    dataKas.splice(index, 1);
+    initKasTable();
+    updateDashboardSummary();
+  }
+}
+
+function resetKasForm() {
+  document.getElementById('kas-edit-index').value = '-1';
   document.getElementById('kas-desc').value = '';
   document.getElementById('kas-nominal').value = '';
+  document.getElementById('kas-form-title').innerText = 'Tambah Kas Harian';
+  document.getElementById('btn-save-kas').querySelector('span').innerText = 'Simpan Transaksi';
+  document.getElementById('btn-cancel-kas').classList.add('hidden');
 }
 
 function initKasTable() {
   const tbody = document.getElementById('kas-table-body');
+  if(!tbody) return;
   tbody.innerHTML = '';
 
   let saldo = 0;
-  dataKas.forEach(item => {
+  dataKas.forEach((item, index) => {
     if(item.tipe === 'Pemasukan') saldo += item.nominal;
     else saldo -= item.nominal;
 
@@ -498,16 +569,29 @@ function initKasTable() {
       <td class="px-4 py-3 text-right font-semibold ${isMasuk ? 'text-emerald-400' : 'text-red-400'}">
         ${isMasuk ? '+' : '-'} Rp ${item.nominal.toLocaleString('id-ID')}
       </td>
+      <td class="px-4 py-3 text-center">
+        <div class="flex items-center justify-center gap-1.5">
+          <button onclick="editKas(${index})" class="p-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white" title="Edit Kas">
+            <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+          </button>
+          <button onclick="deleteKas(${index})" class="p-1 rounded bg-red-500/10 hover:bg-red-500/20 text-red-400" title="Hapus Kas">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+      </td>
     `;
     tbody.appendChild(tr);
   });
 
   document.getElementById('kas-saldo').innerText = `Rp ${saldo.toLocaleString('id-ID')}`;
+  lucide.createIcons();
 }
 
 // Chart Setup
 function initChart() {
-  const ctx = document.getElementById('chartBulanan').getContext('2d');
+  const canvasEl = document.getElementById('chartBulanan');
+  if(!canvasEl) return;
+  const ctx = canvasEl.getContext('2d');
   chartInstance = new Chart(ctx, {
     type: 'bar',
     data: {
