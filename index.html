@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hans Screen Printing Solution - Management Dashboard</title>
+  <title>Garage Hans Sablon - Management Piduiteun</title>
   
   
   <!--Fav Icon-->
@@ -54,11 +54,11 @@
     <h2 class="text-2xl font-black text-white tracking-wide uppercase">Hans</h2>
     <p class="text-gray-400 text-xs tracking-wider mb-6">SCREEN PRINTING SOLUTION</p>
 
-    <h3 class="text-lg font-bold text-gray-200 mb-4">Welcome Back</h3>
+    <h3 class="text-lg font-bold text-gray-200 mb-4">kapendak deui</h3>
 
     <form onsubmit="handleLogin(event)" class="space-y-4 text-left">
       <div>
-        <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5">Username</label>
+        <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5">siapa yaa</label>
         <div class="relative">
           <i data-lucide="user" class="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
           <input type="text" id="login-username" required placeholder="dummy user" 
@@ -67,7 +67,7 @@
       </div>
 
       <div>
-        <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5">Password</label>
+        <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5">Asupkeun Password na</label>
         <div class="relative">
           <i data-lucide="lock" class="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
           <input type="password" id="login-password" required placeholder="••••••••" 
@@ -87,7 +87,7 @@
       </div>
 
       <div id="login-error" class="hidden text-red-400 text-xs text-center bg-red-500/10 py-2 rounded-xl border border-red-500/20">
-        Password salah! (Default PW: Indonesia123)
+        Password salah! (Default PW: yuksablon123)
       </div>
 
       <button type="submit" class="w-full py-3.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-2xl shadow-lg shadow-red-600/30 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer mt-4">
@@ -107,14 +107,14 @@
       <div class="p-5 border-b border-gray-800 flex items-center gap-3">
         <img src="images/logo.png" alt="Hans Logo" class="w-10 h-10 rounded-full border border-red-600 object-cover bg-red-600">
         <div>
-          <h1 class="font-bold text-sm leading-tight text-white uppercase tracking-wider">Hans</h1>
+          <h1 class="font-bold text-sm leading-tight text-white uppercase tracking-wider">Garage</h1>
           <p class="text-[10px] text-gray-400">Screen Printing Solution</p>
         </div>
       </div>
 
       <nav class="p-4 space-y-1">
         <button onclick="switchTab('order-sablon')" id="nav-order-sablon" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm text-gray-300 hover:bg-gray-800 transition-colors">
-          <i data-lucide="shirt" class="w-5 h-5"></i> Orders (Sablon)
+          <i data-lucide="shirt" class="w-5 h-5"></i> Orders (Sablon t-shirt)
         </button>
         <button onclick="switchTab('order-masuk')" id="nav-order-masuk" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm text-gray-300 hover:bg-gray-800 transition-colors">
           <i data-lucide="layout-grid" class="w-5 h-5"></i> Order Masuk <span id="badge-order-masuk" class="ml-auto bg-red-600 text-white text-[10px] px-2 py-0.5 rounded-full">0</span>
@@ -123,17 +123,17 @@
           <i data-lucide="printer" class="w-5 h-5"></i> Print Digital
         </button>
         <button onclick="switchTab('keuangan')" id="nav-keuangan" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm text-gray-300 hover:bg-gray-800 transition-colors">
-          <i data-lucide="wallet" class="w-5 h-5"></i> Kas Harian
+          <i data-lucide="wallet" class="w-5 h-5"></i> Pemasukan Harian
         </button>
         <button onclick="switchTab('grafik')" id="nav-grafik" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm text-gray-300 hover:bg-gray-800 transition-colors">
-          <i data-lucide="bar-chart-3" class="w-5 h-5"></i> Grafik Pencapaian
+          <i data-lucide="bar-chart-3" class="w-5 h-5"></i> Kudu Naik di Bulan Kamari
         </button>
       </nav>
     </div>
 
     <div class="p-4 border-t border-gray-800">
       <button onclick="logout()" class="w-full flex items-center gap-3 px-4 py-2.5 text-red-400 hover:bg-red-500/10 rounded-xl text-sm font-medium transition-colors">
-        <i data-lucide="log-out" class="w-4 h-4"></i> Keluar
+        <i data-lucide="log-out" class="w-4 h-4"></i> Enggeusan ahh..!!
       </button>
     </div>
   </aside>
@@ -147,7 +147,7 @@
           <i data-lucide="menu" class="w-5 h-5"></i>
         </button>
         <div class="flex items-center gap-2">
-          <img src="images/logo.png" alt="Hans Logo" class="w-7 h-7 rounded-full border border-red-600 object-cover bg-red-600">
+          <img src="images/logo.png" alt="logo" class="w-7 h-7 rounded-full border border-red-600 object-cover bg-red-600">
           <span class="font-bold text-sm text-white">HANS Screen Printing Solution</span>
         </div>
       </div>
@@ -202,7 +202,7 @@
           <div>
             <p class="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Total Pesanan</p>
             <h3 id="dash-total-orders" class="text-xl font-black text-indigo-400">0 Order</h3>
-            <p class="text-[10px] text-gray-500 mt-1">Order Sablon &amp; Print</p>
+            <p class="text-[10px] text-gray-500 mt-1">Order Sablon &amp; Cetak</p>
           </div>
           <div class="w-12 h-12 bg-indigo-500/10 text-indigo-400 rounded-2xl flex items-center justify-center shrink-0">
             <i data-lucide="shopping-bag" class="w-6 h-6"></i>
@@ -213,7 +213,7 @@
       <!-- TAB 1: ORDER SABLON -->
       <section id="tab-order-sablon" class="tab-content hidden space-y-6">
         <div>
-          <h2 class="text-2xl font-bold text-white">Orders (Sablon)</h2>
+          <h2 class="text-2xl font-bold text-white">Orders (Sablon T-shirt)</h2>
           <p class="text-xs text-gray-400">Formulir Pesanan Sablon Kaos Dewasa &amp; Anak</p>
         </div>
 
