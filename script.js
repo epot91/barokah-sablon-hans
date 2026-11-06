@@ -70,6 +70,15 @@ function toggleTheme() {
 
   if (html.classList.contains('dark')) {
     html.classList.remove('dark');
+    label.innerText = 'Light Mode';
+  } else {
+    html.classList.add('dark');
+    label.innerText = 'Dark Mode';
+  }
+}
+
+  if (html.classList.contains('dark')) {
+    html.classList.remove('dark');
     label.innerText = 'Theme';
   } else {
     html.classList.add('dark');
