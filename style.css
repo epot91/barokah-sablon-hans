@@ -1,10 +1,303 @@
+/* ==================== LOGIN SCREEN & ONE PIECE HERO THEME ==================== */
+.login-wrapper {
+  background-color: #070709;
+  background-image:
+    radial-gradient(circle at 25% 50%, rgba(59, 4, 12, 0.5) 0%, rgba(20, 3, 6, 0.78) 45%, rgba(7, 7, 9, 0.9) 100%);
+}
+
+.login-background {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  width: 100vw;
+  height: 100vh;
+  object-fit: cover;
+  object-position: center;
+  opacity: 0.62;
+  pointer-events: none;
+}
+
+.bg-radial-glow {
+  position: absolute;
+  z-index: 1;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(217, 16, 36, 0.25) 0%, transparent 70%);
+  top: 50%;
+  left: 25%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  animation: bgPulse 5s ease-in-out infinite alternate;
+}
+
+/* Partikel Bara Api / Haki Melayang */
+.floating-embers span {
+  position: absolute;
+  bottom: -20px;
+  width: 6px;
+  height: 6px;
+  background: #ff2a44;
+  border-radius: 50%;
+  box-shadow: 0 0 12px #3d3536, 0 0 24px #ff6a00;
+  opacity: 0;
+  animation: riseEmber 7s infinite ease-in;
+}
+
+.floating-embers span:nth-child(1) { left: 10%; animation-delay: 0s; animation-duration: 6s; }
+.floating-embers span:nth-child(2) { left: 25%; animation-delay: 1.5s; animation-duration: 8s; width: 4px; height: 4px; }
+.floating-embers span:nth-child(3) { left: 45%; animation-delay: 0.8s; animation-duration: 7s; }
+.floating-embers span:nth-child(4) { left: 65%; animation-delay: 2.2s; animation-duration: 6.5s; width: 5px; height: 5px; }
+.floating-embers span:nth-child(5) { left: 80%; animation-delay: 1s; animation-duration: 9s; }
+.floating-embers span:nth-child(6) { left: 92%; animation-delay: 3s; animation-duration: 7.5s; width: 4px; height: 4px; }
+
+/* Bagian Karakter One Piece */
+.hans-hero {
+  padding: 20px;
+  animation: heroSlideIn 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.character-box {
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: floatLuffy 3.5s ease-in-out infinite;
+}
+
+.luffy-character {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: min(65vh, 500px);
+  object-fit: contain;
+  position: relative;
+  z-index: 3;
+  filter: drop-shadow(0 15px 25px rgba(0, 0, 0, 0.85)) drop-shadow(0 0 20px rgba(217, 16, 36, 0.55));
+  transition: transform 0.4s ease;
+}
+
+.character-box:hover .luffy-character {
+  transform: scale(1.04);
+}
+
+/* Lingkaran Aura Haki */
+.energy-circle {
+  position: absolute;
+  width: 270px;
+  height: 270px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(217, 16, 36, 0.35) 0%, rgba(217, 16, 36, 0.05) 65%, transparent 100%);
+  border: 2px solid rgba(255, 40, 65, 0.6);
+  box-shadow: 0 0 40px rgba(217, 16, 36, 0.6), inset 0 0 25px rgba(217, 16, 36, 0.4);
+  z-index: 1;
+  animation: energyPulse 2.5s ease-in-out infinite;
+}
+
+.energy-ring-outer {
+  position: absolute;
+  width: 320px;
+  height: 320px;
+  border-radius: 50%;
+  border: 1px dashed rgba(255, 80, 100, 0.45);
+  z-index: 1;
+  animation: spinAura 18s linear infinite;
+}
+
+.hans-brand {
+  z-index: 4;
+  animation: logoReveal 1s ease-out forwards;
+}
+
+/* Animasi Kartu Login & Logo Hans */
+.login-card {
+  animation: cardEntrance 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.logo-badge-wrapper {
+  animation: logoGlow 2.5s ease-in-out infinite alternate, floatBadge 4s ease-in-out infinite;
+}
+
+.input-group-anim {
+  opacity: 0;
+  animation: fadeUpInput 0.6s ease-out forwards;
+}
+
+/* Efek Kilau pada Tombol Sign In */
+.btn-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-shimmer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  transform: skewX(-25deg);
+  animation: shimmerSweep 3.5s infinite;
+}
+
+/* Efek Getar saat Login Gagal */
+.shake-error {
+  animation: shakeAnim 0.4s ease-in-out;
+}
+
+/* ==================== KEYFRAMES ==================== */
+@keyframes floatLuffy {
+  0%, 100% {
+    transform: translateY(0px) rotate(-1.5deg);
+  }
+  50% {
+    transform: translateY(-16px) rotate(1.5deg);
+  }
+}
+
+@keyframes energyPulse {
+  0%, 100% {
+    transform: scale(0.92);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+}
+
+@keyframes spinAura {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes logoReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes logoGlow {
+  0% {
+    box-shadow: 0 0 15px rgba(217, 16, 36, 0.4);
+  }
+  100% {
+    box-shadow: 0 0 32px rgba(217, 16, 36, 0.9), 0 0 12px rgba(255, 255, 255, 0.3);
+  }
+}
+
+@keyframes floatBadge {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+@keyframes heroSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateX(-40px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes cardEntrance {
+  0% {
+    opacity: 0;
+    transform: translateY(35px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes fadeUpInput {
+  0% {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmerSweep {
+  0%, 60% { left: -100%; }
+  100% { left: 160%; }
+}
+
+@keyframes riseEmber {
+  0% {
+    transform: translateY(0) scale(0.8);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: translateY(-100vh) scale(1.2);
+    opacity: 0;
+  }
+}
+
+@keyframes bgPulse {
+  0% { opacity: 0.6; transform: translate(-50%, -50%) scale(0.95); }
+  100% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+}
+
+@keyframes shakeAnim {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+
+/* ==================== RESPONSIVE & PRINT ==================== */
+@media (max-width: 1024px) {
+  .login-wrapper {
+    align-items: flex-start;
+  }
+  .character-box {
+    max-width: 390px;
+  }
+  .luffy-character {
+    max-height: 280px;
+  }
+  .energy-circle {
+    width: 180px;
+    height: 180px;
+  }
+  .energy-ring-outer {
+    width: 215px;
+    height: 215px;
+  }
+}
+
+@media (max-width: 640px) {
+  .character-box {
+    max-width: 340px;
+  }
+  .luffy-character {
+    max-height: 240px;
+  }
+}
+
 @media print {
   body * { visibility: hidden; }
   #printable-nota-modal, #printable-nota-modal * { visibility: visible; }
   #printable-nota-modal { 
-    position: absolute; 
-    left: 0; 
-    top: 0; 
+    position: fixed;
+    left: 12mm;
+    top: 12mm;
     width: 100mm !important; 
     border: none !important; 
     box-shadow: none !important;
